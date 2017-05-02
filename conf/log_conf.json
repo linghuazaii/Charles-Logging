@@ -1,7 +1,0 @@
-# '#' is for comments, don't use # in key or value
-{
-    # LOG_NONE, LOG_INFO, LOG_WARN, LOG_ERROR, lower log level will take effect if higher log level is set, use LOG_NONE to shut off logging system
-    "log_level": "LOG_ERROR",
-    # log tags, useful in debugging.
-    "log_tags": "ssh|http|tcp" # you can also comment here
-}

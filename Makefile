@@ -1,7 +1,9 @@
 cc=g++
 cppflags=-g -std=c++11
 include=-I./depend/json-c/include
-lib=-lpthread
+lib=-L./depend/json-c/lib \
+	-ljson-c \
+	-lpthread
 
 src=./src/charles_log.o ./src/test.o
 test_bin=./src/test
