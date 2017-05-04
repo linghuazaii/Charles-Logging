@@ -5,5 +5,7 @@
     "log_level": 3,
     # log tags, useful in debugging. if 'all' is contained or no tags specified, all tags will take effect
     # tags are case insensitive, e.g. SSH or Ssh will be convert to ssh
-    "log_tags": ["ssh", "tcp", "http", "ALL"] # you can also comment here
+    "log_tags": ["ssh", "tcp", "http"], # you can also comment here
+    "log_dir": "../log", # log directory, default is ../log
+    "process_name": "logging" # process_name is use in prefix of log name, if not given, name will be extrat from environment
 }

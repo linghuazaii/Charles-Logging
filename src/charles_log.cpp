@@ -1,6 +1,7 @@
 #include "charles_log.h"
 #include <time.h>
 #include <iostream>
+#include <sched.h>
 using namespace std;
 
 atomic<CharlesLog *> CharlesLog::instance;
@@ -42,7 +43,6 @@ int CharlesLog::loadConfig(const char *conf) {
     stripSpaces(config);
     if (0 != parseJson(config))
         return -1;
-    run();
 
     fclose(file);
     return 0;
@@ -85,36 +85,115 @@ int CharlesLog::parseJson(string &config) {
         std::transform(tag.begin(), tag.end(), tag.begin(), ::tolower);
         log_conf.log_tags.insert(tag);
     }
-    if (log_conf.log_tags.end() != std::find(log_conf.log_tags.begin(), log_conf.log_tags.end(), "all"))
-        log_conf.log_tags.clear();
-    json_object_put(conf_json);
 
+    const char *log_dir = json_object_get_string(json_object_object_get(conf_json, "log_dir"));
+    if (log_dir == NULL)
+        log_conf.log_dir = "../log";
+    else
+        log_conf.log_dir = log_dir;
+    if (log_conf.log_dir[log_conf.log_dir.length() - 1] == '/')
+        log_conf.log_dir.pop_back();
+    string cmd = "mkdir -p " + log_conf.log_dir;
+    system(cmd.c_str());
+
+    const char *process_name = json_object_get_string(json_object_object_get(conf_json, "process_name"));
+    if (process_name != NULL) 
+        log_conf.process_name = process_name;
+    else {
+        string name = getenv("_");
+        log_conf.process_name = name.substr(name.rfind('/') + 1);
+    }
+
+    json_object_put(conf_json);
     return 0;
 }
 
 bool CharlesLog::checkTag(string tag) {
-    if (log_conf.log_tags.empty() ||
-            log_conf.log_tags.end() != std::find(log_conf.log_tags.begin(), log_conf.log_tags.end(), tag))
+    if (log_conf.log_tags.end() != std::find(log_conf.log_tags.begin(), log_conf.log_tags.end(), tag) ||
+            log_conf.log_tags.end() != std::find(log_conf.log_tags.begin(), log_conf.log_tags.end(), "all"))
         return true;
 
     return false;
 }
 
 void *run_callback(void *arg) {
+    /*
+     * make my thread work in IDLE mode.
+     */
+    struct sched_param priority;
+    priority.sched_priority = 0;
+    //sched_setscheduler(0, SCHED_IDLE, &priority);
+
     CharlesLog *handle = (CharlesLog *)arg;
-    //handle->work();
+    handle->work();
     return NULL;
 }
 
 void CharlesLog::run() {
-    pthread_t thread_id;
-    pthread_attr_t thread_attr;
-    pthread_attr_init(&thread_attr);
-    pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED);
-    pthread_attr_setinheritsched(&thread_attr, PTHREAD_EXPLICIT_SCHED);
-    int min_priority = sched_get_priority_min(SCHED_OTHER);
-    cout<<"min: "<<min_priority<<endl;
-    int max_priority = sched_get_priority_max(SCHED_OTHER);
-    cout<<"max: "<<max_priority<<endl;
-    pthread_attr_destroy(&thread_attr);
+    pthread_create(&work_thread, NULL, run_callback, this);
 }
+
+void CharlesLog::stop() {
+    pthread_join(work_thread, NULL);
+}
+
+void CharlesLog::work() {
+    for (;;) {
+        string message;
+        pthread_mutex_lock(&queue_lock);
+        while (messages.empty())
+            pthread_cond_wait(&queue_cond, &queue_lock);
+        message = messages.front();
+        messages.pop();
+        pthread_mutex_unlock(&queue_lock);
+        if (-1 == updateFileHandle())
+            continue;
+        fwrite(message.c_str(), message.length(), 1, file);
+    }
+}
+
+string CharlesLog::getLogName() {
+    time_t now = time(0);
+    struct tm localtm;
+    localtime_r(&now, &localtm);
+    char date[256];
+    strftime(date, 256, "%F", &localtm);
+    string log_name = log_conf.log_dir + "/" + log_conf.process_name + "_" + date + ".log";
+
+    return log_name;
+}
+
+int CharlesLog::updateFileHandle() {
+    string log_name = getLogName();
+    if (current_file != log_name) {
+        if (file != NULL)
+            fclose(file);
+        current_file = log_name;
+        file = fopen(current_file.c_str(), "a+");
+        if (file == NULL) {
+            charles_err("open file %s failed. (%s)", current_file.c_str(), strerror(errno));
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+int CharlesLog::info(string tag, string msg, const char *file, int line) {
+    if (log_conf.log_level < LOG_INFO || !checkTag(tag))
+        return -1;
+
+    time_t now = time(0);
+    char time_buffer[256];
+    ctime_r(&now, time_buffer);
+    time_buffer[strlen(time_buffer) - 1] = 0;
+    char buffer[MAX_LINE];
+    snprintf(buffer, MAX_LINE, "[ %s ] [ %s:%d ] [ %s ] %s\n", time_buffer, file, line, tag.c_str(), msg.c_str());
+    pthread_mutex_lock(&queue_lock);
+    messages.push(string(buffer));
+    pthread_cond_signal(&queue_cond);
+    pthread_mutex_unlock(&queue_lock);
+
+    return 0;
+}
+
