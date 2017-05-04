@@ -122,7 +122,7 @@ void *run_callback(void *arg) {
      */
     struct sched_param priority;
     priority.sched_priority = 0;
-    //sched_setscheduler(0, SCHED_IDLE, &priority);
+    sched_setscheduler(0, SCHED_IDLE, &priority);
 
     CharlesLog *handle = (CharlesLog *)arg;
     handle->work();
