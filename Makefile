@@ -14,6 +14,7 @@ $(so):$(src)
 	$(cc) -shared -fPIC -Wl,-soname,libcharles_log.so.1 $^ -o $@ $(lib)
 	cd lib && ln -s libcharles_log.so.1 libcharles_log.so
 	cp -rd depend/json-c/lib/libjson-c.so* lib/
+	cp src/charles_log.h include/
 
 %.o:%.cpp
 	$(cc) $(cppflags) $(include) $^ -c -o $@
