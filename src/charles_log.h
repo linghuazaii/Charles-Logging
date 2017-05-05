@@ -56,6 +56,10 @@ private:
         file = NULL;
         log_conf.log_tags.insert(string("charles_logging"));
         running = true;
+        level[0] = "NONE";
+        level[1] = "INFO";
+        level[2] = "WARN";
+        level[3] = "ERROR";
     }
     ~CharlesLog() {
         CharlesLog *temp = instance.load(std::memory_order_relaxed);
@@ -77,6 +81,7 @@ private:
     string current_file;
     pthread_t work_thread;
     bool running;
+    const char *level[4];
 public:
     static CharlesLog *getInstance();
 private:
@@ -88,7 +93,7 @@ private:
     int updateFileHandle();
 public:
     int loadConfig(const char *conf);
-    int info(string tag, string msg, const char *file, int line);
+    int log(LOG_LEVEL level, string tag, string msg, const char *file, int line);
     void run();
     void stop();
     void work(); /* you shouldn't call this function outside even though it is public, call run() */
@@ -113,16 +118,24 @@ public:
     CharlesLog *charles_log = CharlesLog::getInstance();\
     charles_log->stop();\
 } while (0)
-/*
- * logging functions
+/* 
+ * logging implements 
  */
-#define LOG_INFO_T(tag, fmt, ...) do {\
+#define LOG_IMP(level, tag, fmt, ...) do {\
     CharlesLog *charles_log = CharlesLog::getInstance();\
     char message[MAX_LINE];\
     snprintf(message, MAX_LINE, fmt, ##__VA_ARGS__);\
-    charles_log->info(tag, message, __FILE__, __LINE__);\
+    charles_log->log(level, tag, message, __FILE__, __LINE__);\
 } while(0)
-
+/*
+ * logging functions
+ */
+#define LOG_INFO_T(tag, fmt, ...) LOG_IMP(LOG_INFO, tag, fmt, ##__VA_ARGS__)
 #define LOG_INFO(fmt, ...) LOG_INFO_T("charles_logging", fmt, ##__VA_ARGS__)
+#define LOG_WARN_T(tag, fmt, ...) LOG_IMP(LOG_WARN, tag, fmt, ##__VA_ARGS__)
+#define LOG_WARN(fmt, ...) LOG_WARN_T("charles_logging", fmt, ##__VA_ARGS__)
+#define LOG_ERROR_T(tag, fmt, ...) LOG_IMP(LOG_ERROR, tag, fmt, ##__VA_ARGS__)
+#define LOG_ERROR(fmt, ...) LOG_ERROR_T("charles_logging", fmt, ##__VA_ARGS__)
+
 
 #endif

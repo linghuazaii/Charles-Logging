@@ -189,8 +189,8 @@ int CharlesLog::updateFileHandle() {
     return 0;
 }
 
-int CharlesLog::info(string tag, string msg, const char *file, int line) {
-    if (log_conf.log_level < LOG_INFO || !checkTag(tag))
+int CharlesLog::log(LOG_LEVEL lvl, string tag, string msg, const char *file, int line) {
+    if (log_conf.log_level < lvl || !checkTag(tag))
         return -1;
 
     time_t now = time(0);
@@ -198,7 +198,7 @@ int CharlesLog::info(string tag, string msg, const char *file, int line) {
     ctime_r(&now, time_buffer);
     time_buffer[strlen(time_buffer) - 1] = 0;
     char buffer[MAX_LINE];
-    snprintf(buffer, MAX_LINE, "[ %s ] [ %s:%d ] [ %s ] %s\n", time_buffer, file, line, tag.c_str(), msg.c_str());
+    snprintf(buffer, MAX_LINE, "[ %s ] [%s] [ %s:%d ] [ %s ] %s\n", time_buffer, level[lvl], file, line, tag.c_str(), msg.c_str());
     pthread_mutex_lock(&queue_lock);
     messages.push(string(buffer));
     pthread_cond_signal(&queue_cond);
