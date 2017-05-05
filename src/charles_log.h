@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <queue>
 #include "json.h"
+#include <unistd.h>
 using std::atomic;
 using std::set;
 using std::string;
@@ -54,6 +55,7 @@ private:
         current_file = "";
         file = NULL;
         log_conf.log_tags.insert(string("charles_logging"));
+        running = true;
     }
     ~CharlesLog() {
         CharlesLog *temp = instance.load(std::memory_order_relaxed);
@@ -74,6 +76,7 @@ private:
     FILE *file;
     string current_file;
     pthread_t work_thread;
+    bool running;
 public:
     static CharlesLog *getInstance();
 private:

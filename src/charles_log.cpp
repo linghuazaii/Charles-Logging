@@ -130,15 +130,25 @@ void *run_callback(void *arg) {
 }
 
 void CharlesLog::run() {
-    pthread_create(&work_thread, NULL, run_callback, this);
+    pthread_attr_t thread_attr;
+    pthread_attr_init(&thread_attr);
+    pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED);
+    pthread_create(&work_thread, &thread_attr, run_callback, this);
+    pthread_attr_destroy(&thread_attr);
 }
 
 void CharlesLog::stop() {
-    pthread_join(work_thread, NULL);
+    while (!messages.empty())
+        sleep(1); /* wait for all messages be consumed */
+    if (file != NULL) {
+        fflush(file); /* write the last piece */
+        fsync(fileno(file));
+    }
+    running = false;
 }
 
 void CharlesLog::work() {
-    for (;;) {
+    for (; !(messages.empty() && running == false);) {
         string message;
         pthread_mutex_lock(&queue_lock);
         while (messages.empty())
