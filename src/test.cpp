@@ -4,7 +4,7 @@
 void *thread_routine1(void *arg) {
     for (int i = 0; i < 1000; ++i) {
         LOG_INFO("thread routine 1> %d", time(0));
-        printf("1\n");
+        //printf("1\n");
     }
 
     return NULL;
@@ -13,7 +13,7 @@ void *thread_routine1(void *arg) {
 void *thread_routine2(void *arg) {
     for (int i = 0; i < 1000; ++i) {
         LOG_INFO_T("http", "thread routine 2> %d", time(0));
-        printf("2\n");
+        //printf("2\n");
     }
 
     return NULL;
@@ -22,7 +22,7 @@ void *thread_routine2(void *arg) {
 void *thread_routine3(void *arg) {
     for (int i = 0; i < 1000; ++i) {
         LOG_INFO_T("not exist", "thread routine 3> %d", time(0));
-        printf("3\n");
+        //printf("3\n");
     }
 
     return NULL;
@@ -31,7 +31,7 @@ void *thread_routine3(void *arg) {
 void *thread_routine4(void *arg) {
     for (int i = 0; i < 1000; ++i) {
         LOG_INFO("thread routine 4> normal logging");
-        printf("4\n");
+        //printf("4\n");
     }
 
     return NULL;
