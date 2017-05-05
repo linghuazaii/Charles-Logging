@@ -16,15 +16,17 @@
 #include <errno.h>
 #include <algorithm>
 #include <queue>
-#include "json.h"
 #include <unistd.h>
+#include <map>
 using std::atomic;
 using std::set;
 using std::string;
 using std::vector;
 using std::queue;
+using std::map;
 
 #define MAX_LINE 1024
+#define MAX_PIECES 1000
 
 #define charles_err(fmt, ...) do {\
     fprintf(stderr, fmt, ##__VA_ARGS__);\
@@ -82,6 +84,7 @@ private:
     pthread_t work_thread;
     bool running;
     const char *level[4];
+    map<uint64_t, string> piece;
 public:
     static CharlesLog *getInstance();
 private:
@@ -91,12 +94,16 @@ private:
     bool checkTag(string tag);
     string getLogName();
     int updateFileHandle();
+    uint64_t gettid();
 public:
     int loadConfig(const char *conf);
     int log(LOG_LEVEL level, string tag, string msg, const char *file, int line);
     void run();
     void stop();
     void work(); /* you shouldn't call this function outside even though it is public, call run() */
+    void writePiece(string msg); 
+    string readPiece(); 
+    void clearPiece(); 
 };
 
 /*
@@ -127,6 +134,13 @@ public:
     snprintf(message, MAX_LINE, fmt, ##__VA_ARGS__);\
     charles_log->log(level, tag, message, __FILE__, __LINE__);\
 } while(0)
+
+#define FLUSH_PIECE(level, tag) do {\
+    CharlesLog *charles_log = CharlesLog::getInstance();\
+    string message = charles_log->readPiece();\
+    charles_log->log(level, tag, message, __FILE__, __LINE__);\
+    charles_log->clearPiece();\
+} while(0)
 /*
  * logging functions
  */
@@ -137,5 +151,18 @@ public:
 #define LOG_ERROR_T(tag, fmt, ...) LOG_IMP(LOG_ERROR, tag, fmt, ##__VA_ARGS__)
 #define LOG_ERROR(fmt, ...) LOG_ERROR_T("charles_logging", fmt, ##__VA_ARGS__)
 
+#define LOG_PIECE(fmt, ...) do {\
+    CharlesLog *charles_log = CharlesLog::getInstance();\
+    char message[MAX_LINE];\
+    snprintf(message, MAX_LINE, fmt, ##__VA_ARGS__);\
+    charles_log->writePiece(message);\
+} while (0)
+
+#define LOG_INFO_TP(tag) FLUSH_PIECE(LOG_INFO, tag)
+#define LOG_INFO_P() FLUSH_PIECE(LOG_INFO, "charles_logging")
+#define LOG_WARN_TP(tag) FLUSH_PIECE(LOG_WARN, tag)
+#define LOG_WARN_P() FLUSH_PIECE(LOG_WARN, "charles_logging")
+#define LOG_ERROR_TP(tag) FLUSH_PIECE(LOG_ERROR, tag)
+#define LOG_ERROR_P() FLUSH_PIECE(LOG_ERROR, "charles_logging")
 
 #endif

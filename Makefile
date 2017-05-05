@@ -1,20 +1,25 @@
 cc=g++
-cppflags=-g -std=c++11
+cppflags=-std=c++11 -fPIC
 include=-I./depend/json-c/include
 lib=-L./depend/json-c/lib \
-	-l:libjson-c.a \
-	-lpthread
+	 -ljson-c
 
-src=./src/charles_log.o ./src/test.o
-test_bin=./src/test
+src=./src/charles_log.o 
+so=./lib/libcharles_log.so.1
+test_bin=./bin/test
 
-all:$(test_bin)
+all:$(so) $(test_bin)
 
-$(test_bin):$(src)
-	$(cc) $^ -o $@ $(lib)
+$(so):$(src)
+	$(cc) -shared -fPIC -Wl,-soname,libcharles_log.so.1 $^ -o $@ $(lib)
+	cd lib && ln -s libcharles_log.so.1 libcharles_log.so
+	cp -rd depend/json-c/lib/libjson-c.so* lib/
 
 %.o:%.cpp
 	$(cc) $(cppflags) $(include) $^ -c -o $@
 
+$(test_bin):
+	$(cc) -L./lib src/test.cpp -o $@ -lpthread -ljson-c -lcharles_log -std=c++11
+
 clean:
-	-rm -f $(src) $(test_bin)
+	-rm -rf $(src) $(test_bin) ./lib/* ./include/*

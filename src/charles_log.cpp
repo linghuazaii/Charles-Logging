@@ -2,6 +2,7 @@
 #include <time.h>
 #include <iostream>
 #include <sched.h>
+#include "json.h"
 using namespace std;
 
 atomic<CharlesLog *> CharlesLog::instance;
@@ -207,3 +208,21 @@ int CharlesLog::log(LOG_LEVEL lvl, string tag, string msg, const char *file, int
     return 0;
 }
 
+void CharlesLog::writePiece(string msg) {
+    piece[gettid()] += msg;
+}
+
+string CharlesLog::readPiece() {
+    return piece[gettid()];
+}
+
+void CharlesLog::clearPiece() {
+    piece[gettid()] = "";
+}
+
+uint64_t CharlesLog::gettid() {
+	pthread_t ptid = pthread_self();
+	uint64_t thread_id = 0;
+	memcpy(&thread_id, &ptid, std::min(sizeof(thread_id), sizeof(ptid)));
+	return thread_id;
+}
