@@ -79,5 +79,8 @@ Here is the sample config file, you can find it in `conf/log_conf` writting in J
 ```
 And you can find a sample in `src/test.cpp`, to run the sample you should `export LD_LIBRARY_PATH=../lib:$LD_LIBRARY_PATH` first for `libcharles_log.so` depends on `libjson-c`. You should set this environment variable to let `libcharles_log.so` find where json-c locates. then run `test`, and check log file in `log/`.
 
+### Note
+You must compile your project with `-std=c++11` and link with `-lpthread`.
+
 ### End
 It is very simple and very easy to use and the most important thing is that it won't let io block your bussiness.
