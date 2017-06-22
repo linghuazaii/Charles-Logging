@@ -15,6 +15,8 @@ $(so):$(src)
 	cd lib && ln -s libcharles_log.so.1 libcharles_log.so
 	cp -rd depend/json-c/lib/libjson-c.so* lib/
 	cp src/charles_log.h include/
+	mkdir include/json-c
+	cp depend/json-c/include/* include/json-c
 
 %.o:%.cpp
 	$(cc) $(cppflags) $(include) $^ -c -o $@
