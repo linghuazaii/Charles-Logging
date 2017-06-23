@@ -149,17 +149,18 @@ void CharlesLog::stop() {
 }
 
 void CharlesLog::work() {
+    string message;
     for (; !(messages.empty() && running == false);) {
-        string message;
         pthread_mutex_lock(&queue_lock);
         while (messages.empty())
             pthread_cond_wait(&queue_cond, &queue_lock);
-        message = messages.front();
+        message = messages.front().c_str();
         messages.pop();
         pthread_mutex_unlock(&queue_lock);
         if (-1 == updateFileHandle())
             continue;
         fwrite(message.c_str(), message.length(), 1, file);
+        fflush(file);
     }
 }
 

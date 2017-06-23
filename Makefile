@@ -1,5 +1,5 @@
 cc=g++
-cppflags=-std=c++11 -fPIC
+cppflags=-std=c++11 -fPIC -O3
 include=-I./depend/json-c/include
 lib=-L./depend/json-c/lib \
 	 -ljson-c
@@ -11,8 +11,8 @@ test_bin=./bin/test
 all:$(so) $(test_bin)
 
 $(so):$(src)
-	$(cc) -shared -fPIC -Wl,-soname,libcharles_log.so.1 $^ -o $@ $(lib)
-	cd lib && ln -s libcharles_log.so.1 libcharles_log.so
+	$(cc) -shared -fPIC -Wl,-soname,libcharles_log.so.1 $^ -o $@ $(lib) -O3
+	-cd lib && ln -s libcharles_log.so.1 libcharles_log.so
 	cp -rd depend/json-c/lib/libjson-c.so* lib/
 	cp src/charles_log.h include/
 	mkdir include/json-c
